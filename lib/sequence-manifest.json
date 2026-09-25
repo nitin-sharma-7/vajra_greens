@@ -1,0 +1,32 @@
+{
+  "charge": {
+    "source": "1.mp4",
+    "sourceSha256": "503082d5c15591476335a566e2799572c33440488dbcccf06c121db5588d424d",
+    "path": "/sequences/charge",
+    "frameCount": 240,
+    "fps": 24.0,
+    "width": 1920,
+    "height": 1080,
+    "bytes": 349118637
+  },
+  "system": {
+    "source": "2.mp4",
+    "sourceSha256": "314f704efbf113bc5f5f0a94d40cfca6bca54a4067b9ac2310bb62b3544cacb6",
+    "path": "/sequences/system",
+    "frameCount": 240,
+    "fps": 24.0,
+    "width": 1280,
+    "height": 720,
+    "bytes": 211995474
+  },
+  "horizon": {
+    "source": "3.mp4",
+    "sourceSha256": "673b132c1457a2f7bbcd83f6f6a095ddd21a7e192a70741e37b607197eb7a719",
+    "path": "/sequences/horizon",
+    "frameCount": 240,
+    "fps": 24.0,
+    "width": 1920,
+    "height": 1080,
+    "bytes": 531910626
+  }
+}
