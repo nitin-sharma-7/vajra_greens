@@ -4,6 +4,7 @@ import "./globals.css";
 import { SiteHeader } from "@/components/navigation/SiteHeader";
 import { SiteFooter } from "@/components/navigation/SiteFooter";
 import { ScrollSystem } from "@/components/motion/ScrollSystem";
+import { Cursor } from "@/components/motion/Cursor";
 
 const manrope = localFont({ src: "../assets/fonts/manrope-latin-variable.woff2", variable: "--font-manrope", weight: "200 800", display: "swap" });
 const instrument = localFont({ src: [
@@ -40,6 +41,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SiteHeader />
         {children}
         <SiteFooter />
+        <Cursor />
+        <div className="grain" aria-hidden="true" />
       </body>
     </html>
   );

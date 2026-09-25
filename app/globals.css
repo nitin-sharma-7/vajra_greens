@@ -25,61 +25,80 @@
   --blue: #104975;
   --page-gutter: clamp(22px, 5.1vw, 92px);
   --header-height: 82px;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
-* {
-  box-sizing: border-box;
+
+/* Lenis smooth scroll (from lenis/dist/lenis.css) */
+html.lenis,
+html.lenis body {
+  height: auto;
 }
-html {
-  scroll-behavior: auto;
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
 }
-body {
-  margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: var(--font-manrope), sans-serif;
-  -webkit-font-smoothing: antialiased;
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
 }
-body.menu-open {
-  overflow: hidden;
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
 }
-::selection {
-  background: var(--energy);
-  color: var(--ink);
-}
-a {
-  color: inherit;
-  text-decoration: none;
-}
-button {
-  font: inherit;
-}
-img,
-video {
-  display: block;
-  max-width: 100%;
-}
-svg {
-  display: block;
-}
-h1,
-h2,
-h3,
-p {
-  margin: 0;
-}
-h1,
-h2,
-h3 {
-  text-wrap: balance;
-  word-spacing: 0.08em;
-}
-p {
-  text-wrap: pretty;
-  word-spacing: 0.015em;
-}
-em {
-  font-family: var(--font-instrument), Georgia, serif;
-  font-weight: 400;
+/* Element resets live in the base layer so Tailwind utilities (mt-*, text-*) can override them. */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-manrope), sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body.menu-open {
+    overflow: hidden;
+  }
+  ::selection {
+    background: var(--energy);
+    color: var(--ink);
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  button {
+    font: inherit;
+  }
+  img,
+  video {
+    display: block;
+    max-width: 100%;
+  }
+  svg {
+    display: block;
+  }
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    word-spacing: 0.08em;
+  }
+  p {
+    text-wrap: pretty;
+    word-spacing: 0.015em;
+  }
+  em {
+    font-family: var(--font-instrument), Georgia, serif;
+    font-weight: 400;
+  }
 }
 .eyebrow,
 .section-index,
@@ -94,8 +113,7 @@ em {
 .location-field-caption,
 .locations-foot,
 .roadmap-disclaimer,
-.closing-upper,
-.footer-bottom {
+.closing-upper {
   font-family: var(--font-mono), monospace;
   font-size: 10px;
   letter-spacing: 0.13em;
@@ -175,8 +193,78 @@ em {
   align-items: center;
   padding: 0 var(--page-gutter);
   gap: 4vw;
-  border-bottom: 1px solid rgba(29, 40, 42, 0.1);
+  border-bottom: 1px solid transparent;
+  background: rgba(247, 247, 243, 0);
+  color: var(--ink);
+  transition:
+    transform 0.7s var(--ease-out-expo),
+    background-color 0.5s ease,
+    border-color 0.5s ease,
+    color 0.5s ease,
+    backdrop-filter 0.5s ease;
+}
+body.header-scrolled .site-header {
+  background: rgba(247, 247, 243, 0.78);
+  border-bottom-color: rgba(29, 40, 42, 0.08);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
+}
+body.header-dark .site-header {
+  color: #fff;
+  background: rgba(3, 19, 31, 0);
+  border-bottom-color: transparent;
+}
+body.header-dark.header-scrolled .site-header {
+  background: rgba(3, 19, 31, 0.28);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+body.header-hidden .site-header {
+  transform: translateY(-101%);
+}
+body.header-dark .desktop-nav a {
+  color: rgba(255, 255, 255, 0.68);
+}
+body.header-dark .desktop-nav a:hover,
+body.header-dark .desktop-nav a.current {
+  color: #fff;
+}
+body.header-dark .brand strong {
+  color: #80e1bb;
+}
+body.header-dark .brand img {
+  mix-blend-mode: normal;
+}
+body.header-dark .header-contact span {
+  color: #80e1bb;
+}
+body.header-dark .menu-toggle {
+  color: #fff;
+}
+body.header-dark .menu-toggle b {
+  background: #fff;
+}
+/* The menu panel is paper-coloured, so the open header always uses the light treatment. */
+body.menu-open .site-header {
+  transform: none;
+  color: var(--ink);
   background: var(--paper);
+  border-bottom-color: rgba(29, 40, 42, 0.1);
+}
+body.menu-open .site-header .desktop-nav a {
+  color: var(--ink-soft);
+}
+body.menu-open .site-header .brand strong,
+body.menu-open .site-header .header-contact span {
+  color: var(--blue);
+}
+body.menu-open .site-header .brand img {
+  mix-blend-mode: multiply;
+}
+body.menu-open .site-header .menu-toggle {
+  color: var(--ink);
+}
+body.menu-open .site-header .menu-toggle b {
+  background: var(--ink);
 }
 .brand {
   display: inline-flex;
@@ -1289,68 +1377,7 @@ em {
   font-size: 26px;
 }
 
-/* Footer and supporting pages */
-.site-footer {
-  padding: 65px var(--page-gutter) 20px;
-  background: #e8ebe6;
-}
-.footer-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 60px;
-  min-height: 310px;
-}
-.footer-identity img {
-  width: 285px;
-  height: 143px;
-  object-fit: contain;
-  object-position: left center;
-  mix-blend-mode: multiply;
-}
-.footer-identity p {
-  margin-top: 2px;
-  color: var(--ink-soft);
-  font-size: 13px;
-  line-height: 1.7;
-}
-.footer-links {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(135px, 1fr));
-  gap: 55px;
-  width: min(470px, 50%);
-  padding-top: 20px;
-}
-.footer-links > div {
-  display: flex;
-  flex-direction: column;
-  align-items: start;
-  gap: 14px;
-  font-size: 12px;
-}
-.footer-links .eyebrow {
-  margin-bottom: 12px;
-}
-.footer-links a {
-  transition: color 0.25s;
-}
-.footer-links a:hover {
-  color: var(--blue);
-}
-.footer-links div > span:last-child:not(.eyebrow) {
-  color: var(--ink-soft);
-}
-.footer-bottom {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-  color: var(--ink-soft);
-  letter-spacing: 0.04em;
-}
-.footer-bottom a {
-  color: var(--ink);
-}
+/* Responsive overrides */
 
 @media (max-width: 1100px) {
   .desktop-nav {
@@ -1746,29 +1773,6 @@ em {
     min-width: 100%;
     font-size: 20px;
   }
-  .site-footer {
-    padding-top: 45px;
-  }
-  .footer-top {
-    display: block;
-  }
-  .footer-identity img {
-    width: 250px;
-    height: 125px;
-  }
-  .footer-links {
-    width: 100%;
-    margin-top: 55px;
-    padding-bottom: 70px;
-    gap: 20px;
-  }
-  .footer-bottom {
-    flex-wrap: wrap;
-    font-size: 8px;
-  }
-  .footer-bottom span:nth-child(2) {
-    display: none;
-  }
 }
 @media (max-width: 375px) {
   .hero-title {
@@ -1827,6 +1831,183 @@ em {
   }
 }
 
+/* Masked line reveals: padding gives descenders and italic overhang room, negative margin keeps layout unchanged. */
+.line-mask {
+  display: block;
+  overflow: hidden;
+  padding: 0.2em 0.16em 0.2em 0;
+  margin: -0.2em -0.16em -0.2em 0;
+}
+/* Flex stops the masks' negative margins collapsing with siblings and each other, so layout stays net-zero. */
+:where(h1, h2, h3, p):has(> .line-mask) {
+  display: flex;
+  flex-direction: column;
+}
+.line,
+.line-inner {
+  display: block;
+  transform-origin: 0% 100%;
+  will-change: transform;
+}
+/* Later hero/horizon beats stay hidden until GSAP takes over (and permanently under reduced motion). */
+.beat-later {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Intro loader: a light "charging" screen that opens a circular portal onto the hero film. */
+.intro-loader {
+  --hole: 0vmax;
+  --rim: 0px;
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  /* Inside the portal edge the fill turns energy-green, giving the opening hole a soft glowing rim. */
+  background: radial-gradient(circle at 50% 50%, #54d7ba var(--hole), var(--paper) calc(var(--hole) + var(--rim)));
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent var(--hole), #000 calc(var(--hole) + 1px));
+  mask-image: radial-gradient(circle at 50% 50%, transparent var(--hole), #000 calc(var(--hole) + 1px));
+  /* Failsafe: never trap the page behind the loader if scripts fail to run. */
+  animation: loader-failsafe 0.01s 7s forwards;
+}
+.loader-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(23, 39, 43, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 39, 43, 0.05) 1px, transparent 1px);
+  background-size: 72px 72px;
+  background-position: center;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000, transparent 72%);
+  mask-image: radial-gradient(circle at 50% 50%, #000, transparent 72%);
+}
+.loader-cell {
+  flex: 1;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(23, 39, 43, 0.09);
+  transform-origin: 50% 100%;
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.4s ease;
+}
+/* Cells shift from the logo's ocean teal to its leaf green along the bar. */
+.loader-cell.is-lit {
+  background: color-mix(in oklab, #13759b calc((1 - var(--i)) * 100%), #4caf50);
+  box-shadow: 0 0 14px rgba(69, 185, 141, 0.4);
+}
+@keyframes loader-failsafe {
+  to {
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+
+/* Hero details */
+.scroll-cue {
+  position: relative;
+  width: 1px;
+  height: 46px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.2);
+}
+.scroll-cue::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #54d7ba;
+  animation: scroll-cue 2.2s var(--ease-out-expo) infinite;
+}
+@keyframes scroll-cue {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* Process steps light up as the drawn line reaches them. */
+.process-dot {
+  transition:
+    background-color 0.5s ease,
+    box-shadow 0.6s var(--ease-out-expo),
+    transform 0.6s var(--ease-out-expo);
+}
+.process-num {
+  transition: color 0.5s ease;
+}
+.process-step.is-lit .process-dot {
+  background: #54d7ba;
+  transform: scale(1.25);
+  box-shadow: 0 0 0 7px rgba(84, 215, 186, 0.14);
+}
+.process-step.is-lit .process-num {
+  color: #80e1bb;
+}
+
+.arrow-link span {
+  display: inline-block;
+  transition: transform 0.5s var(--ease-out-expo);
+}
+.arrow-link:hover span {
+  transform: translate(4px, -4px);
+}
+
+/* Cursor follower (fine pointers only; the native cursor stays visible). */
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 250;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  opacity: 0;
+  transition:
+    opacity 0.4s ease,
+    width 0.5s var(--ease-out-expo),
+    height 0.5s var(--ease-out-expo),
+    background-color 0.4s ease;
+}
+.cursor.is-visible {
+  opacity: 1;
+}
+.cursor.is-hover {
+  width: 64px;
+  height: 64px;
+  background: #fff;
+}
+
+/* Film grain for texture. Static image, so it costs nothing per frame. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-loader,
+  .cursor {
+    display: none;
+  }
+  .scroll-cue::after {
+    animation: none;
+  }
+  .site-header {
+    transition: none;
+  }
+}
+
 /* Preserve the natural shape of the display italic inside tightly tracked headings. */
 h1 em,
 h2 em,
@@ -1837,4 +2018,76 @@ h3 .font-display {
   letter-spacing: -0.018em !important;
   word-spacing: 0.05em;
   overflow: visible;
+}
+
+/* Outlined index numerals on the operating-model rail cards. */
+.card-num {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--num-stroke, rgba(23, 39, 43, 0.26));
+}
+
+/* Footer */
+.footer-glow {
+  background:
+    radial-gradient(60% 80% at 85% 0%, rgba(84, 215, 186, 0.14), transparent 70%),
+    radial-gradient(50% 60% at 10% 10%, rgba(16, 73, 117, 0.45), transparent 70%);
+}
+.footer-pulse {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #54d7ba;
+  box-shadow: 0 0 12px rgba(84, 215, 186, 0.7);
+}
+.footer-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1px solid #54d7ba;
+  animation: footer-pulse 2.4s var(--ease-out-expo) infinite;
+}
+@keyframes footer-pulse {
+  from {
+    transform: scale(0.4);
+    opacity: 1;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+/* Label rolls up on hover and a copy (from data-text) rolls in beneath it. */
+.footer-link {
+  color: rgba(255, 255, 255, 0.82);
+  transition: color 0.4s ease;
+}
+.footer-link:hover {
+  color: #80e1bb;
+}
+.roll {
+  position: relative;
+  display: inline-flex;
+  overflow: hidden;
+  vertical-align: top;
+}
+.roll > span,
+.roll::after {
+  transition: transform 0.6s var(--ease-out-expo);
+}
+.roll::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 100%;
+}
+.footer-link:hover .roll > span,
+.footer-link:hover .roll::after {
+  transform: translateY(-100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .footer-pulse::after {
+    animation: none;
+  }
 }

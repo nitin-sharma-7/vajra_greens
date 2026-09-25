@@ -49,7 +49,7 @@ export function SiteHeader() {
   return (
     <header className="site-header" ref={rootRef}>
       <Link className="brand" href="/" aria-label="Vajra Greens home" onClick={() => setOpen(false)}>
-        <img src="/media/vajra-mark.png" alt="" width="39" height="39" />
+        <img src="/media/vajra-mark-round.png" alt="" width="39" height="39" />
         <span>VAJRA <strong>GREENS</strong></span>
       </Link>
       <nav className="desktop-nav" aria-label="Main navigation">
