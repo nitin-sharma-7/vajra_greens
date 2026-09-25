@@ -239,50 +239,136 @@ export default function HomePage() {
       cleanups.push(() => gsap.ticker.remove(tick));
     }
 
-    /* ---------- 02 Operating model: pinned horizontal rail ---------- */
+    /* ---------- 02 Operating model: a free horizontal rail (page scroll is never hijacked) ---------- */
     revealLines(".operating-model h2");
     fadeUp(".operating-aside");
-    const mm = gsap.matchMedia();
-    mm.add("(min-width: 768px)", () => {
-      const rail = track.current;
-      if (!rail) return;
+    gsap.from(q(".rail-card"), {
+      x: 120,
+      autoAlpha: 0,
+      stagger: 0.1,
+      duration: 1.5,
+      ease: "expo.out",
+      scrollTrigger: { trigger: ".rail-track", start: "top 82%", once: true },
+    });
+    const rail = track.current;
+    if (rail) {
+      const cards = q(".rail-card");
       const counter = q(".rail-count")[0];
       const fill = q(".rail-progress-fill")[0];
-      gsap.from(q(".rail-card"), {
-        y: 90,
-        autoAlpha: 0,
-        stagger: 0.12,
-        duration: 1.4,
-        ease: "expo.out",
-        scrollTrigger: { trigger: ".operating-model", start: "top 62%", once: true },
-      });
-      const railTween = gsap.to(rail, {
-        x: () => -(rail.scrollWidth - window.innerWidth + 64),
-        ease: "none",
-        scrollTrigger: {
-          id: "home-operating-rail",
-          trigger: ".operating-model",
-          start: "top top",
-          end: () => `+=${Math.max(window.innerWidth * 2.2, rail.scrollWidth)}`,
-          scrub: 0.9,
-          pin: true,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            gsap.set(fill, { scaleX: self.progress });
-            counter.textContent = `0${Math.min(pillars.length, Math.floor(self.progress * pillars.length) + 1)}`;
-          },
-        },
-      });
-      q(".rail-card").forEach((card) => {
-        gsap.fromTo(card.querySelector(".card-num"), { x: 70 }, {
-          x: -70,
-          ease: "none",
-          scrollTrigger: { trigger: card, containerAnimation: railTween, start: "left right", end: "right left", scrub: true },
+      const prev = q(".rail-prev")[0] as HTMLButtonElement;
+      const next = q(".rail-next")[0] as HTMLButtonElement;
+      const nums = cards.map((card) => gsap.quickSetter(card.querySelector(".card-num"), "x", "px"));
+      const setFill = gsap.quickSetter(fill, "scaleX");
+      const maxScroll = () => rail.scrollWidth - rail.clientWidth;
+      const cardStarts = () => {
+        const inset = parseFloat(getComputedStyle(rail).paddingLeft);
+        return cards.map((card) => card.offsetLeft - rail.offsetLeft - inset);
+      };
+      let glide: gsap.core.Tween | undefined;
+
+      const sync = () => {
+        const max = maxScroll();
+        const progress = max > 0 ? rail.scrollLeft / max : 0;
+        setFill(progress);
+        const starts = cardStarts();
+        const active = starts.reduce((best, start, index) => Math.abs(start - rail.scrollLeft) < Math.abs(starts[best] - rail.scrollLeft) ? index : best, 0);
+        counter.textContent = `0${progress > 0.98 ? cards.length : active + 1}`;
+        prev.disabled = rail.scrollLeft < 4;
+        next.disabled = rail.scrollLeft > max - 4;
+        // The outlined numerals drift against the scroll direction for a little depth.
+        const center = rail.clientWidth / 2;
+        cards.forEach((card, index) => {
+          const offset = card.offsetLeft - rail.offsetLeft - rail.scrollLeft + card.offsetWidth / 2 - center;
+          nums[index](gsap.utils.clamp(-36, 36, offset * -0.05));
         });
+      };
+      const glideTo = (left: number) => {
+        glide?.kill();
+        glide = gsap.to(rail, { scrollLeft: gsap.utils.clamp(0, maxScroll(), left), duration: 1, ease: "expo.out", onUpdate: sync });
+      };
+      const nearestStart = (left: number) => cardStarts().reduce((best, start) => Math.abs(start - left) < Math.abs(best - left) ? start : best, 0);
+      const step = (direction: 1 | -1) => {
+        const starts = cardStarts();
+        const current = rail.scrollLeft;
+        const target = direction === 1 ? starts.find((start) => start > current + 8) : [...starts].reverse().find((start) => start < current - 8);
+        glideTo(target ?? (direction === 1 ? maxScroll() : 0));
+      };
+      const onPrev = () => step(-1);
+      const onNext = () => step(1);
+      const onKey = (event: KeyboardEvent) => {
+        if (event.key === "ArrowRight") { event.preventDefault(); step(1); }
+        if (event.key === "ArrowLeft") { event.preventDefault(); step(-1); }
+      };
+
+      // Mouse drag with momentum, settling on the nearest card. Touch and trackpads scroll natively.
+      let dragging = false;
+      let moved = false;
+      let startX = 0;
+      let startLeft = 0;
+      let lastX = 0;
+      let lastTime = 0;
+      let velocity = 0;
+      const onDown = (event: PointerEvent) => {
+        if (event.pointerType !== "mouse" || event.button !== 0) return;
+        glide?.kill();
+        dragging = true;
+        moved = false;
+        startX = lastX = event.clientX;
+        startLeft = rail.scrollLeft;
+        lastTime = performance.now();
+        velocity = 0;
+      };
+      const onMove = (event: PointerEvent) => {
+        if (!dragging) return;
+        const dx = event.clientX - startX;
+        if (!moved && Math.abs(dx) > 4) {
+          moved = true;
+          rail.classList.add("is-dragging");
+          rail.setPointerCapture(event.pointerId);
+        }
+        if (!moved) return;
+        const now = performance.now();
+        velocity = (event.clientX - lastX) / Math.max(1, now - lastTime);
+        lastX = event.clientX;
+        lastTime = now;
+        rail.scrollLeft = startLeft - dx;
+      };
+      const onUp = () => {
+        if (!dragging) return;
+        dragging = false;
+        rail.classList.remove("is-dragging");
+        if (moved) glideTo(nearestStart(rail.scrollLeft - velocity * 420));
+      };
+      // A drag that ends over a link must not also count as a click.
+      const onClick = (event: MouseEvent) => {
+        if (moved) { event.preventDefault(); event.stopPropagation(); moved = false; }
+      };
+
+      rail.addEventListener("scroll", sync, { passive: true });
+      rail.addEventListener("pointerdown", onDown);
+      rail.addEventListener("pointermove", onMove);
+      rail.addEventListener("pointerup", onUp);
+      rail.addEventListener("pointercancel", onUp);
+      rail.addEventListener("click", onClick, true);
+      rail.addEventListener("keydown", onKey);
+      prev.addEventListener("click", onPrev);
+      next.addEventListener("click", onNext);
+      window.addEventListener("resize", sync);
+      sync();
+      cleanups.push(() => {
+        glide?.kill();
+        rail.removeEventListener("scroll", sync);
+        rail.removeEventListener("pointerdown", onDown);
+        rail.removeEventListener("pointermove", onMove);
+        rail.removeEventListener("pointerup", onUp);
+        rail.removeEventListener("pointercancel", onUp);
+        rail.removeEventListener("click", onClick, true);
+        rail.removeEventListener("keydown", onKey);
+        prev.removeEventListener("click", onPrev);
+        next.removeEventListener("click", onNext);
+        window.removeEventListener("resize", sync);
       });
-    });
-    mm.add("(max-width: 767px)", () => fadeUp(".rail-card"));
+    }
 
     /* ---------- 03 Process: the line draws down and lights each step as it passes ---------- */
     revealLines(".process-section h2");
@@ -380,7 +466,6 @@ export default function HomePage() {
     document.fonts.ready.then(() => requestAnimationFrame(() => ScrollTrigger.refresh()));
     return () => {
       cleanups.forEach((cleanup) => cleanup());
-      mm.revert();
       videos.forEach((video) => video.pause());
     };
   }, { scope: root });
@@ -467,20 +552,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="operating-model relative overflow-hidden bg-[#e9eee9] px-[var(--page-gutter)] py-[calc(var(--header-height)+38px)] md:flex md:h-[100svh] md:min-h-[560px] md:flex-col md:pb-[clamp(32px,6svh,72px)] md:pt-[calc(var(--header-height)+20px)]">
-        <div className="mb-12 flex items-end justify-between gap-10 md:mb-[clamp(20px,4svh,48px)]">
-          <div><p className="font-technical text-[9px] uppercase tracking-[.2em] text-[#5d6968]">02 / The Vajra system</p><h2 className="mt-4 text-[length:clamp(2.8rem,min(5.2vw,9svh),5.8rem)] font-semibold leading-[.92] tracking-[-.07em]"><Lines lines={["Everything works", <span className={`${accent} text-[#104975]`}>together.</span>]} /></h2></div>
-          <div className="operating-aside hidden max-w-xs md:block">
-            <p className="text-sm leading-7 text-[#5d6968]">Four disciplines. One operating system for dependable charging.</p>
-            <div className="mt-6 flex items-center gap-4 font-technical text-[10px] tracking-[.16em] text-[#5d6968]"><span className="rail-count text-[#17272b]">01</span><span className="h-px flex-1 bg-[#bcc8c1]"><span className="rail-progress-fill block h-full origin-left scale-x-0 bg-[#104975]" /></span><span>0{pillars.length}</span></div>
+      <section className="operating-model relative overflow-hidden bg-[#e9eee9] py-24 md:py-32">
+        <div className="mb-12 flex flex-wrap items-end justify-between gap-10 px-[var(--page-gutter)] md:mb-14">
+          <div><p className="font-technical text-[9px] uppercase tracking-[.2em] text-[#5d6968]">02 / The Vajra system</p><h2 className="mt-4 text-[clamp(2.8rem,5.2vw,5.8rem)] font-semibold leading-[.92] tracking-[-.07em]"><Lines lines={["Everything works", <span className={`${accent} text-[#104975]`}>together.</span>]} /></h2></div>
+          <div className="operating-aside w-full max-w-xs">
+            <p className="hidden text-sm leading-7 text-[#5d6968] md:block">Four disciplines. One operating system for dependable charging.</p>
+            <div className="mt-6 flex items-center gap-4 font-technical text-[10px] tracking-[.16em] text-[#5d6968]"><span className="rail-count w-5 text-[#17272b]">01</span><span className="h-px flex-1 bg-[#bcc8c1]"><span className="rail-progress-fill block h-full origin-left scale-x-0 bg-[#104975]" /></span><span>0{pillars.length}</span></div>
+            <div className="mt-6 flex items-center gap-3">
+              <button type="button" className="rail-prev rail-button" aria-label="Previous card"><span aria-hidden="true">←</span></button>
+              <button type="button" className="rail-next rail-button" aria-label="Next card"><span aria-hidden="true">→</span></button>
+              <span className="ml-3 font-technical text-[9px] uppercase tracking-[.2em] text-[#5d6968]">Drag or swipe</span>
+            </div>
           </div>
         </div>
-        <div ref={track} className="flex w-full flex-col gap-5 md:min-h-0 md:w-max md:flex-1 md:flex-row md:will-change-transform">
+        <div ref={track} className="rail-track flex gap-5 overflow-x-auto" data-lenis-prevent-horizontal tabIndex={0} role="region" aria-label="The Vajra system: four disciplines">
           {pillars.map((pillar, index) => (
-            <article key={pillar.number} className={`rail-card relative flex min-h-[360px] w-full shrink-0 flex-col justify-between overflow-hidden rounded-[4px] p-8 md:h-full md:max-h-[460px] md:w-[44vw] md:max-w-[560px] md:p-[clamp(24px,4svh,40px)] ${index % 2 ? "bg-[#104975] text-white [--num-stroke:rgba(255,255,255,.34)]" : "bg-[#f7f7f3] text-[#17272b] [--num-stroke:rgba(23,39,43,.26)]"}`}>
-              <span className="card-num pointer-events-none absolute right-6 top-5 select-none text-[length:clamp(5.5rem,min(9vw,14svh),9rem)] font-semibold leading-none tracking-[-.08em] md:right-9 md:top-7" aria-hidden="true">{pillar.number}</span>
+            <article key={pillar.number} className={`rail-card relative flex h-[clamp(380px,56vh,460px)] w-[82vw] shrink-0 flex-col justify-between overflow-hidden rounded-[4px] p-8 sm:w-[58vw] md:w-[44vw] md:max-w-[560px] md:p-10 ${index % 2 ? "bg-[#104975] text-white [--num-stroke:rgba(255,255,255,.34)]" : "bg-[#f7f7f3] text-[#17272b] [--num-stroke:rgba(23,39,43,.26)]"}`}>
+              <span className="card-num pointer-events-none absolute right-6 top-5 select-none text-[clamp(5.5rem,9vw,9rem)] font-semibold leading-none tracking-[-.08em] md:right-9 md:top-7" aria-hidden="true">{pillar.number}</span>
               <div className="relative font-technical text-[9px] uppercase tracking-[.19em] opacity-65">{pillar.number} / {pillar.eyebrow}</div>
-              <div className="relative"><span className="mb-7 block h-2 w-2 rounded-full bg-[#45b98d]" /><h3 className="text-[length:clamp(2.4rem,min(4.6vw,8svh),5rem)] font-semibold leading-[.9] tracking-[-.07em]">{pillar.title}</h3><p className="mt-6 max-w-sm text-sm leading-7 opacity-70 md:mt-[clamp(12px,2.5svh,24px)]">{pillar.copy}</p></div>
+              <div className="relative"><span className="mb-7 block h-2 w-2 rounded-full bg-[#45b98d]" /><h3 className="text-[clamp(2.4rem,4.6vw,5rem)] font-semibold leading-[.9] tracking-[-.07em]">{pillar.title}</h3><p className="mt-6 max-w-sm text-sm leading-7 opacity-70">{pillar.copy}</p></div>
             </article>
           ))}
         </div>

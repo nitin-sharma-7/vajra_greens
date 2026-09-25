@@ -2091,3 +2091,54 @@ h3 .font-display {
     animation: none;
   }
 }
+
+/* Operating-model rail: native horizontal scroller with drag, buttons and touch snap. */
+.rail-track {
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  cursor: grab;
+}
+.rail-track::-webkit-scrollbar {
+  display: none;
+}
+.rail-track.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+.rail-track.is-dragging .rail-card {
+  pointer-events: none;
+}
+@media (pointer: coarse) {
+  .rail-track {
+    scroll-snap-type: x mandatory;
+  }
+  .rail-card {
+    scroll-snap-align: start;
+  }
+}
+.rail-button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(23, 39, 43, 0.2);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease,
+    border-color 0.4s ease,
+    opacity 0.4s ease;
+}
+.rail-button:hover:not(:disabled) {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.rail-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
